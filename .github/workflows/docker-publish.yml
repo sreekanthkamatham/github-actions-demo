@@ -1,0 +1,34 @@
+name: Build & Push Docker Image
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract short commit SHA
+        id: vars
+        run: echo "SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/github-actions-app:latest .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/github-actions-app:${{ steps.vars.outputs.SHA }} .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/github-actions-app:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/github-actions-app:${{ steps.vars.outputs.SHA }}
+
